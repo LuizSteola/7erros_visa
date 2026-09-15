@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selo ECOS 2026 - Oficina Vigilância Sanitária</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; margin: 0; padding: 10px; background: #f0f4f8; color: #333; }
+    
+    /* TELA DE LOGIN */
+    #tela-login { max-width: 400px; margin: 20px auto; padding: 25px 20px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 6px solid #0071bc; }
+    .logo-hc { max-width: 190px; height: auto; margin-bottom: 10px; }
+    .titulo-login { color: #003366; margin: 10px 0 2px 0; font-size: 1.5em; font-weight: 700; }
+    .subtitulo-login { color: #0088b2; margin: 0 0 20px 0; font-size: 1.05em; font-weight: 600; }
+    
+    input, select, button { width: 100%; padding: 14px; margin: 8px 0; box-sizing: border-box; border-radius: 6px; border: 1px solid #ccc; font-size: 16px; }
+    input:focus, select:focus { border-color: #0071bc; outline: none; }
+    button { background: linear-gradient(135deg, #0071bc, #005691); color: white; border: none; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #005691; }
+    
+    /* TELA DO JOGO */
+    #tela-jogo { display: none; }
+    
+    #game-container { 
+      position: relative; 
+      display: block; 
+      width: 100%; 
+      max-width: 800px; 
+      margin: 10px auto; 
+    }
+    
+    #imagem-setor { 
+      width: 100%; 
+      height: auto; 
+      display: block; 
+      border-radius: 8px; 
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+    
+    /* HOTSPOTS (Pontos Clicáveis) */
+    .hotspot {
+      position: absolute;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .hotspot:active { background: rgba(0, 255, 0, 0.4); }
+
+    /* Coordenadas separadas dos 9 erros (%) */
+    #h1 { top: 41%; left: 4%;  width: 5%;  height: 12%; } /* Tomada sem espelho */
+    #h2 { top: 0%;  left: 32%; width: 26%; height: 15%; } /* Teto embolorado */
+    #h3 { top: 23%; left: 5%;  width: 13%; height: 14%; } /* Aviso sem plastificação */
+    #h4 { top: 65%; left: 33%; width: 15%; height: 26%; } /* Armário descascado */
+    #h5 { top: 1%;  left: 60%; width: 21%; height: 14%; } /* Lâmpada soltando */
+    #h6 { top: 82%; left: 5%;  width: 27%; height: 12%; } /* Rodapé solto */
+    #h7 { top: 68%; left: 49%; width: 13%; height: 28%; } /* Lixeira transbordando */
+    #h8 { top: 8%;  left: 85%; width: 14%; height: 37%; } /* Quadros com cortiça */
+    #h9 { top: 60%; left: 73%; width: 8%;  height: 10%; } /* Pintura descascando na parede */
+
+    .escondido { display: none !important; }
+    
+    #status { font-weight: bold; margin: 10px 0; font-size: 1.15em; color: #222; background: white; padding: 10px 15px; border-radius: 8px; display: inline-block; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+    .timer-alerta { color: #d9534f !important; animation: pisca 1s infinite; }
+    @keyframes pisca { 50% { opacity: 0.5; } }
+
+    /* POP-UP / MODAL INTERATIVO */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.65);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-card {
+      background: white;
+      padding: 25px 20px;
+      border-radius: 12px;
+      max-width: 320px;
+      width: 85%;
+      text-align: center;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+      animation: popIn 0.25s ease-out;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.7); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal-card h3 { color: #28a745; margin-top: 0; font-size: 1.35em; }
+    .modal-card p { font-size: 1.05em; color: #444; margin: 15px 0; line-height: 1.4; }
+    .modal-btn { background: #28a745; margin-top: 10px; padding: 12px; font-size: 16px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+
+  <!-- TELA DE LOGIN -->
+  <div id="tela-login">
+    <img src="https://raw.githubusercontent.com/LuizSteola/7erros_visa/refs/heads/main/Logo-HC-Texto-Preto.png" alt="HC Unicamp" class="logo-hc">
+    <h2 class="titulo-login">Selo ECOS 2026</h2>
+    <h3 class="subtitulo-login">Oficina Vigilância Sanitária</h3>
+    
+    <input type="text" id="nome" placeholder="Seu Nome Completo" required>
+    <select id="setor" required>
+      <option value="">Selecione sua Área...</option>
+      <option value="Assistência">Assistência</option>
+      <option value="Administrativo">Administrativo</option>
+    </select>
+    <button onclick="iniciarJogo()">Iniciar Inspeção</button>
+  </div>
+
+  <!-- TELA DO JOGO -->
+  <div id="tela-jogo">
+    <h2>Caça aos Erros - VISA</h2>
+    <div id="status">
+      Progresso: <span id="contador">0</span>/9 | 
+      Tempo Restante: <span id="timer">02:30</span>
+    </div>
+
+    <div id="game-container">
+      <img id="imagem-setor" src="https://raw.githubusercontent.com/LuizSteola/7erros_visa/refs/heads/main/imagem_oficina_visa_9erros.jpg" alt="Imagem Setor Hospitalar">
+      
+      <div class="hotspot" id="h1" onclick="encontrarItem(this, 'Tomada sem espelho')"></div>
+      <div class="hotspot" id="h2" onclick="encontrarItem(this, 'Teto embolorado')"></div>
+      <div class="hotspot" id="h3" onclick="encontrarItem(this, 'Aviso sem plastificação')"></div>
+      <div class="hotspot" id="h4" onclick="encontrarItem(this, 'Armário com fórmica descascada')"></div>
+      <div class="hotspot" id="h5" onclick="encontrarItem(this, 'Lâmpada fluorescente soltando')"></div>
+      <div class="hotspot" id="h6" onclick="encontrarItem(this, 'Rodapé solto')"></div>
+      <div class="hotspot" id="h7" onclick="encontrarItem(this, 'Lixeira transbordando')"></div>
+      <div class="hotspot" id="h8" onclick="encontrarItem(this, 'Quadros com cortiça/aviso sem plastificar')"></div>
+      <div class="hotspot" id="h9" onclick="encontrarItem(this, 'Pintura descascando na parede')"></div>
+    </div>
+
+    <br>
+    <button id="btn-enviar" onclick="finalizarJogo('manual')" style="max-width: 300px; margin: 10px auto;">Concluir Inspeção</button>
+  </div>
+
+  <!-- MODAL DE FEEDBACK -->
+  <div id="modal-popup" class="modal-overlay">
+    <div class="modal-card">
+      <h3 id="modal-titulo">🎉 Muito Bem!</h3>
+      <p id="modal-mensagem"></p>
+      <button class="modal-btn" onclick="fecharModal()">Continuar</button>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/a/macros/unicamp.br/s/AKfycbw8QKokrmviAE_Jq6VDDQ1P_WDThLul1p4hV43Js4cHzJOM0FUsyCDLAT2dk5eTgiEBxw/exec";
+    
+    let todosItens = [
+      'Tomada sem espelho', 
+      'Teto embolorado', 
+      'Aviso sem plastificação', 
+      'Armário com fórmica descascada', 
+      'Lâmpada fluorescente soltando', 
+      'Rodapé solto', 
+      'Lixeira transbordando',
+      'Quadros com cortiça/aviso sem plastificar',
+      'Pintura descascando na parede'
+    ];
+    
+    let encontrados = [];
+    let tempoRestante = 150; // 2 minutos e 30 segundos
+    let timerInterval;
+    let nomeUsuario = "";
+    let setorUsuario = "";
+    let jogoFinalizado = false;
+
+    function iniciarJogo() {
+      nomeUsuario = document.getElementById('nome').value.trim();
+      setorUsuario = document.getElementById('setor').value;
+
+      if (!nomeUsuario || !setorUsuario) {
+        alert("Por favor, preencha seu nome e selecione sua área.");
+        return;
+      }
+
+      document.getElementById('tela-login').style.display = 'none';
+      document.getElementById('tela-jogo').style.display = 'block';
+
+      atualizarDisplayTimer();
+      timerInterval = setInterval(() => { 
+        tempoRestante--; 
+        atualizarDisplayTimer();
+
+        if (tempoRestante <= 0) {
+          clearInterval(timerInterval);
+          alert("⏱️ O tempo de 02:30 esgotou! Sua inspeção será enviada automaticamente.");
+          finalizarJogo('tempo_esgotado');
+        }
+      }, 1000);
+    }
+
+    function atualizarDisplayTimer() {
+      let min = Math.floor(tempoRestante / 60);
+      let sec = tempoRestante % 60;
+      let minTexto = min < 10 ? "0" + min : min;
+      let secTexto = sec < 10 ? "0" + sec : sec;
+      let timerElemento = document.getElementById('timer');
+      
+      timerElemento.innerText = `${minTexto}:${secTexto}`;
+      
+      if (tempoRestante <= 30) {
+        timerElemento.classList.add('timer-alerta');
+      }
+    }
+
+    function encontrarItem(elemento, nomeItem) {
+      if (jogoFinalizado) return;
+
+      elemento.classList.add('escondido');
+      encontrados.push(nomeItem);
+      document.getElementById('contador').innerText = encontrados.length;
+      
+      let faltam = 9 - encontrados.length;
+
+      if (faltam > 0) {
+        exibirModal("🎉 Item Encontrado!", `Você localizou: <strong>${nomeItem}</strong>.<br><br>Faltam apenas <strong>${faltam}</strong> item(ns)!`);
+      } else {
+        exibirModal("🏆 Parabéns!", `Você encontrou TODOS os 9 erros de vigilância sanitária!`);
+      }
+    }
+
+    function exibirModal(titulo, mensagem) {
+      document.getElementById('modal-titulo').innerHTML = titulo;
+      document.getElementById('modal-mensagem').innerHTML = mensagem;
+      document.getElementById('modal-popup').style.display = 'flex';
+    }
+
+    function fecharModal() {
+      document.getElementById('modal-popup').style.display = 'none';
+      if (encontrados.length === 9) {
+        finalizarJogo('todos_encontrados');
+      }
+    }
+
+    function finalizarJogo(motivo) {
+      if (jogoFinalizado) return;
+      jogoFinalizado = true;
+
+      clearInterval(timerInterval);
+      document.getElementById('btn-enviar').disabled = true;
+      document.getElementById('btn-enviar').innerText = "Enviando Dados...";
+
+      let tempoDecorrido = 150 - tempoRestante;
+      let naoEncontrados = todosItens.filter(i => !encontrados.includes(i));
+      
+      // Chave primária única e registro de data/hora
+      let idInspecao = "INSP-" + crypto.randomUUID();
+      let dataHoraEnvio = new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_inspecao: idInspecao,
+          data_hora: dataHoraEnvio,
+          grupo: nomeUsuario,
+          setor: setorUsuario,
+          tempo: tempoDecorrido,
+          qtdEncontrada: encontrados.length,
+          encontrados: encontrados.join("; "),
+          naoEncontrados: naoEncontrados.join("; ")
+        })
+      }).then(() => {
+        alert("Inspeção enviada com sucesso! Obrigado por participar.");
+        location.reload();
+      });
+    }
+  </script>
+</body>
+</html>
